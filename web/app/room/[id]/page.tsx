@@ -196,7 +196,7 @@ const Page: FC<{ params: Promise<{ id: string }> }> = ({ params }) => {
   }, []);
 
   useEffect(() => {
-    const socket = io('https://streammate-signalling-server.onrender.com');
+    const socket = io(process.env.NEXT_PUBLIC_BACKEND_URL);
     console.log('socket', socket);
     socket.emit('room-join', id);
 
