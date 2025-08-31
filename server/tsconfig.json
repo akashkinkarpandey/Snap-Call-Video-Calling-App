@@ -1,18 +1,11 @@
 {
-  "$schema": "https://json.schemastore.org/tsconfig",
-  "display": "Node LTS",
-  "_version": "20.1.0",
   "compilerOptions": {
-    "lib": [
-      "es2023"
-    ],
-    "module": "node16",
-    "target": "es2022",
-    "strict": true,
+    "target": "ES2020",
+    "module": "commonjs",
+    "lib": ["ES2020"],
+    "types": ["node"],
     "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "node16",
-    "outDir": "./dist",
+    "strict": true,
+    "skipLibCheck": true
   }
 }
