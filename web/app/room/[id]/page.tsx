@@ -61,20 +61,33 @@ const Page: FC<{ params: Promise<{ id: string }> }> = ({ params }) => {
     return {
       iceServers: [
         {
-          urls: ['stun:fr-turn3.xirsys.com', 'stun:stun1.l.google.com:19302']
+          urls: [
+            'stun:fr-turn3.xirsys.com',
+            'stun:stun1.l.google.com:19302',
+            'stun:stun.l.google.com:19302',
+            'stun:stun1.l.google.com:19302',
+            'stun:stun2.l.google.com:19302',
+            'stun:stun3.l.google.com:19302',
+            'stun:stun4.l.google.com:19302'
+          ]
         },
         {
-          username:
-            'mypv_nBgtsi595DUOKcQBvSThglQ0tIZXK1PTWosWAYSBZRv8fbVPJtCCMCEBWdIAAAAAGZ3Fz5zZW5ibw==',
-          credential: 'e38da9f4-30c4-11ef-b935-0242ac120004',
-          urls: [
-            'turn:fr-turn3.xirsys.com:80?transport=udp',
-            'turn:fr-turn3.xirsys.com:3478?transport=udp',
-            'turn:fr-turn3.xirsys.com:80?transport=tcp',
-            'turn:fr-turn3.xirsys.com:3478?transport=tcp',
-            'turns:fr-turn3.xirsys.com:443?transport=tcp',
-            'turns:fr-turn3.xirsys.com:5349?transport=tcp'
-          ]
+          urls: 'stun:global.stun.twilio.com:3478'
+        },
+        {
+          username: 'dc2d2894d5a9023620c467b0e71cfa6a35457e6679785ed6ae9856fe5bdfa269',
+          credential: 'tE2DajzSJwnsSbc123',
+          urls: 'turn:global.turn.twilio.com:3478?transport=udp'
+        },
+        {
+          username: 'dc2d2894d5a9023620c467b0e71cfa6a35457e6679785ed6ae9856fe5bdfa269',
+          credential: 'tE2DajzSJwnsSbc123',
+          urls: 'turn:global.turn.twilio.com:3478?transport=tcp'
+        },
+        {
+          username: 'dc2d2894d5a9023620c467b0e71cfa6a35457e6679785ed6ae9856fe5bdfa269',
+          credential: 'tE2DajzSJwnsSbc123',
+          urls: 'turn:global.turn.twilio.com:443?transport=tcp'
         }
       ]
     };
