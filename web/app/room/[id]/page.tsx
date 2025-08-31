@@ -56,6 +56,7 @@ const Page: FC<{ params: Promise<{ id: string }> }> = ({ params }) => {
   const [mic, setMic] = useState<boolean>(true);
   const [camera, setCamera] = useState<boolean>(true);
   const [isConnected, setIsConnected] = useState<boolean>(false);
+  const [isScreenSharing, setIsScreenSharing] = useState<boolean>(false);
 
   const config: RTCConfiguration = useMemo(() => {
     return {
@@ -111,6 +112,7 @@ const Page: FC<{ params: Promise<{ id: string }> }> = ({ params }) => {
 
     if (content === 'screen') {
       if (screenVideoRef.current) screenVideoRef.current.srcObject = stream;
+      setIsScreenSharing(true);
     } else if (content === 'webcam') {
       if (remoteVideoRef.current) remoteVideoRef.current.srcObject = stream;
       setIsConnected(true);
@@ -194,7 +196,7 @@ const Page: FC<{ params: Promise<{ id: string }> }> = ({ params }) => {
   }, []);
 
   useEffect(() => {
-    const socket = io('http://localhost:8080');
+    const socket = io('https://streammate-signalling-server.onrender.com');
     console.log('socket', socket);
     socket.emit('room-join', id);
 
@@ -277,30 +279,77 @@ const Page: FC<{ params: Promise<{ id: string }> }> = ({ params }) => {
   }, [toggleMediaStream, camera]);
 
   const handleScreenShare = useCallback(async () => {
+    if (isScreenSharing) {
+      stopScreenShare();
+      return;
+    }
+
     let stream: MediaStream;
     try {
-      stream = await navigator.mediaDevices.getDisplayMedia({ audio: true });
+      stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
     } catch (error) {
-      switch ((error as Error).name) {
-        case 'NotAllowedError':
-          toast.error('Permission denied: Please allow access to screen sharing.');
-          break;
-        case 'NotFoundError':
-          toast.error('No screen found on this device.');
-      }
+      toast.error('Screen share cancelled or not allowed.');
       return;
     }
 
     id2ContentRef.current.set(stream.id, 'screen');
     socketRef.current?.emit('id2Content', Array.from(id2ContentRef.current), id);
 
-    stream.getTracks().forEach((track) => pcRef.current?.addTrack(track, stream));
+    // Replace video track if already sending webcam
+    const videoSender = pcRef.current?.getSenders().find((s) => s.track?.kind === 'video');
+    if (videoSender) {
+      videoSender.replaceTrack(stream.getVideoTracks()[0]);
+    } else {
+      stream.getTracks().forEach((track) => pcRef.current?.addTrack(track, stream));
+    }
 
     if (screenVideoRef.current) {
       screenVideoRef.current.srcObject = stream;
       screenVideoRef.current.muted = true;
     }
+
+    setIsScreenSharing(true);
+
+    // Handle user clicking "Stop sharing" in browser UI
+    stream.getVideoTracks()[0].addEventListener('ended', () => {
+      stopScreenShare();
+    });
+  }, [id, isScreenSharing]);
+
+
+  const stopScreenShare = useCallback(() => {
+    const screenStream = screenVideoRef.current?.srcObject as MediaStream;
+    if (screenStream) {
+      screenStream.getTracks().forEach((track) => track.stop());
+    }
+
+    // Restore webcam track
+    const webcamTrack = localStreamRef.current?.getVideoTracks()[0];
+    if (webcamTrack) {
+      const videoSender = pcRef.current?.getSenders().find((s) => s.track?.kind === 'video');
+      if (videoSender) {
+        videoSender.replaceTrack(webcamTrack);
+      }
+    }
+
+    if (screenVideoRef.current) {
+      screenVideoRef.current.srcObject = null;
+    }
+
+    setIsScreenSharing(false);
+
+    // Clean up id2Content mapping
+    const streamId = Array.from(id2ContentRef.current.entries()).find(
+      ([_, content]) => content === 'screen'
+    )?.[0];
+    if (streamId) {
+      id2ContentRef.current.delete(streamId);
+      socketRef.current?.emit('id2Content', Array.from(id2ContentRef.current), id);
+    }
+
+    toast.success('Screen sharing stopped');
   }, [id]);
+
 
   const copyRoomLink = useCallback(() => {
     navigator.clipboard.writeText(window.location.href);
@@ -492,9 +541,13 @@ const Page: FC<{ params: Promise<{ id: string }> }> = ({ params }) => {
             <Button
               variant="outline"
               size="lg"
-              onClick={handleScreenShare}
+              onClick={isScreenSharing ? stopScreenShare : handleScreenShare}
               className="rounded-2xl h-16 w-16 p-0 transition-all duration-300 hover:scale-110 shadow-xl bg-white/20 hover:bg-white/30 text-white border-2 border-white/30">
-              <ScreenShare className="w-6 h-6" />
+              {isScreenSharing ? (
+                <ScreenShare className="w-6 h-6 text-red-400" /> // red when active
+              ) : (
+                <ScreenShare className="w-6 h-6" />
+              )}
             </Button>
 
             {/* Separator */}
